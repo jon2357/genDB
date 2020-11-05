@@ -2,14 +2,15 @@
 # (If test is in a subdirectory, this breaks the relative imports of the package)
 # (If test is in the package directory, it seems to work well)
 # Assumes you are currently running the SQL database and have run the 'createTestSQLServer.py' script
-# import sys, os
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import sys, os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from pathlib import Path
 
 ## Import modules to test
-from .db import SQLServer
+from gendb.db import SQLServer
 
-TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "tests" / "test_output"
+TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "test_output"
 if not TEST_OUTPUT_DIR.is_dir():
     TEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

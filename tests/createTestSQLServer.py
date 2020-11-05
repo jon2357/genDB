@@ -1,4 +1,4 @@
-# python ./gendb/tests/createTestSQLServer.py
+# python ./gendb/test/createTestSQLServer.py
 import pyodbc
 
 connectStr = "DRIVER={ODBC Driver 17 for SQL Server};Server=localhost\SQLEXPRESS;Database=master;trusted_connection=yes;"

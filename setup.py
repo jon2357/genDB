@@ -7,7 +7,7 @@ requirements = ["pyodbc>=4"]
 
 setup(
     name="gendb",
-    version="0.0.1",
+    version="0.0.2",
     author="Jon Strunk",
     author_email="jon@jonstrunk.com",
     description="A package to provide a generic SQL Querying Base Class",
