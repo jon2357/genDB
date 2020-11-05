@@ -31,6 +31,54 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
+def formatField(inDriver, field):
+    # check if database is SQLite
+    if re.search("SQLite", inDriver):
+        return "'{}'".format(field)
+    else:
+        return field
+
+
+def checkNumeric(inDriver, field):
+    # check if database is TSQL
+    if re.search("SQL Server", inDriver):
+        return "ISNUMERIC({}) = 1".format(field)
+
+    # check if database is SQLite
+    if re.search("SQLite", inDriver):
+        # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} GLOB '[1-9]')"
+        # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} REGEXP '/^\d*\.?\d+$/' )"
+        return "(typeof({}) = 'integer' OR typeof({}) = 'real')".format(field, field, field)
+
+    # check if database is Postgres
+    if re.search("PostgreSQL", inDriver):
+        pass
+
+    # check if database is Oracle
+    if re.search("Oracle", inDriver):
+        pass
+
+
+def convertString(inDriver, field, value):
+    if re.search("SQL Server", inDriver):
+        if isinstance(value, int):
+            return "TRY_CONVERT(bigint, {})".format(field)
+        if isinstance(value, float):
+            return "TRY_CONVERT(dec(38,2), {})".format(field)
+
+    if re.search("SQLite", inDriver):
+        if isinstance(value, int):
+            return "CAST({} AS INT)".format(field)
+        if isinstance(value, float):
+            return "CAST({} AS REAL)".format(field)
+
+    if re.search("PostgreSQL", inDriver):
+        pass
+
+    if re.search("Oracle", inDriver):
+        pass
+
+
 class SQLServer:
     def __init__(self, env=base_environment, sql="", inVars=None, dbg=False):
         self.__env = base_environment
@@ -127,24 +175,38 @@ class SQLServer:
             return
 
         addString = ""
+        # field = formatField(self.env["driver"], field)
+        # Check if we are search for NULL or excluding NULL values
         if value == None:
             if inType == "=":
                 addString = f"{field} is null"
             elif inType in ["!=", "<>"]:
                 addString = f"{field} is not null"
+
+        # Check if value is in a list
         elif isinstance(value, list) and inType.lower() in ["in", "not in"]:
+            # Extend array with the values in the list
+            self._conditionVars.extend(value)
             qString = "(" + ",".join(["?"] * len(value)) + ")"
             addString = f"{field} {inType} {qString}"
-            self._conditionVars.extend(value)
-        elif isinstance(value, int):
-            addString = f"ISNUMERIC({field}) = 1 AND TRY_CONVERT(bigint, {field}) {inType} ?"
+
+        # Check if value is numeric
+        elif isinstance(value, (int, float)):
+            # Add search value to array
             self._conditionVars.append(value)
-        elif isinstance(value, float):
-            addString = f"ISNUMERIC({field}) = 1 AND TRY_CONVERT(dec(38,2), {field}) {inType} ?"
-            self._conditionVars.append(value)
+            qString = "?"
+
+            numCheckStr = checkNumeric(self.env["driver"], field)
+            numConvertStr = convertString(self.env["driver"], field, value)
+            fieldStr = "{} AND {}".format(numCheckStr, numConvertStr)
+            addString = f"{fieldStr} {inType} {qString}"
+
+        # If value is not in a list, not numeric, and not null, search without any data type checks
         else:
-            addString = f"{field} {inType} ?"
+            # Add search value to array
             self._conditionVars.append(value)
+            qString = "?"
+            addString = f"{field} {inType} {qString}"
 
         self.sql = f"{self.sql} AND {addString}"
 
@@ -241,11 +303,14 @@ class SQLServer:
 
     def get_fields(self):
         try:
-            iter(self.result)
-            iter(self.result[0])
-            return self.result[0].keys()
-        except TypeError as e:
-            logger.error(f"Results are not iterable: {len(self.results)}")
+            if len(self.result) == 0:
+                return None
+            else:
+                iter(self.result)
+                iter(self.result[0])
+                return self.result[0].keys()
+        except Exception as e:
+            logger.error(f"Results are not iterable: {len(self.result)}")
             logger.error(e, exc_info=True)
             print("not iterable")
 
