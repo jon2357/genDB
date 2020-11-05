@@ -1,9 +1,11 @@
+import os
 import sqlite3
 from sqlite3 import Error
 
+db_file = "testDB.db"
+
 ### Create a test data database
 def generateDB():
-    db_file = "testDB.db"
     createTestTable = """ CREATE TABLE IF NOT EXISTS testtable ( 
         id integer PRIMARY KEY, 
         fldText text NOT NULL, 
@@ -41,6 +43,11 @@ def generateDB():
 
     except Error as e:
         print(e)
+
+
+def deleteDB():
+    os.remove(db_file)
+    print("File Removed!")
 
 
 if __name__ == "__main__":

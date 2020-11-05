@@ -6,15 +6,18 @@ import csv
 import json
 from datetime import datetime
 
+### User Modules
 from .log import get_logger
 
-logger = get_logger(__file__)
+logger = get_logger(f"{__package__}.{__name__}")
 
+
+### Define SQL Base Class
 base_environment = {
     "server": None,
     "driver": None,
     "database": None,
-    "trusted_connection": "yes",
+    "trusted_connection": None,
     "user": None,
     "pass": None,
 }
@@ -28,18 +31,57 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
+def checkNumeric(inDriver, field):
+    # check if database is TSQL
+    if re.search("SQL Server", inDriver):
+        return "ISNUMERIC({}) = 1".format(field)
+
+    # check if database is SQLite
+    if re.search("SQLite", inDriver):
+        # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} GLOB '[1-9]')"
+        # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} REGEXP '/^\d*\.?\d+$/' )"
+        return "(typeof({}) = 'integer' OR typeof({}) = 'real')".format(field, field, field)
+
+    # check if database is Postgres
+    if re.search("PostgreSQL", inDriver):
+        pass
+
+    # check if database is Oracle
+    if re.search("Oracle", inDriver):
+        pass
+
+
+def convertString(inDriver, field, value):
+    if re.search("SQL Server", inDriver):
+        if isinstance(value, int):
+            return "TRY_CONVERT(bigint, {})".format(field)
+        if isinstance(value, float):
+            return "TRY_CONVERT(dec(38,2), {})".format(field)
+
+    if re.search("SQLite", inDriver):
+        if isinstance(value, int):
+            return "CAST({} AS INT)".format(field)
+        if isinstance(value, float):
+            return "CAST({} AS REAL)".format(field)
+
+    if re.search("PostgreSQL", inDriver):
+        pass
+
+    if re.search("Oracle", inDriver):
+        pass
+
+
 class SQLServer:
     def __init__(self, env=base_environment, sql="", inVars=None, dbg=False):
         self.__env = base_environment
         self.env = env
+        logger.info(f'Initializing Database Class: ENV: {self.env["server"]} ')
         self.sql = sql
         self.vars = inVars
         self.result = list()
         self._conditionVars = list()
         self.settings = {"timeout": 45}
         self.debug = dbg
-        print(f'Initializing Database Class: ENV: {env["server"]}')
-        logger.info(f'Initializing Database Class: ENV: {env["server"]}')
 
     ###### Properties ######
     @property
@@ -49,7 +91,7 @@ class SQLServer:
     @env.setter
     def env(self, inEnv):
         # Check if inEnv is a dictionary and contains specific keys ("server","driver","database","trusted_connection","user","pass")
-        acceptedFields = ["server", "driver", "database", "trusted_connection", "user", "pass"]
+        acceptedFields = base_environment.keys()
         if not isinstance(inEnv, dict):
             logger.error(f"Updating ENV: passed in variable is not a dictionary - {inEnv}")
             return
@@ -62,8 +104,9 @@ class SQLServer:
                 break
 
         if allow:
-            logger.info(f"Updating:ENV: {inEnv.keys()}")
-            self.__env.update(inEnv)
+            inDictLowerCase = {k.lower(): v for k, v in inEnv.items()}
+            logger.info(f"Updating:ENV: {inDictLowerCase.keys()}")
+            self.__env.update(inDictLowerCase)
 
     @property
     def sql(self):  # Getter
@@ -124,24 +167,37 @@ class SQLServer:
             return
 
         addString = ""
+        # Check if we are search for NULL or excluding NULL values
         if value == None:
             if inType == "=":
                 addString = f"{field} is null"
             elif inType in ["!=", "<>"]:
                 addString = f"{field} is not null"
+
+        # Check if value is in a list
         elif isinstance(value, list) and inType.lower() in ["in", "not in"]:
+            # Extend array with the values in the list
+            self._conditionVars.extend(value)
             qString = "(" + ",".join(["?"] * len(value)) + ")"
             addString = f"{field} {inType} {qString}"
-            self._conditionVars.extend(value)
-        elif isinstance(value, int):
-            addString = f"ISNUMERIC({field}) = 1 AND TRY_CONVERT(bigint, {field}) {inType} ?"
+
+        # Check if value is numeric
+        elif isinstance(value, (int, float)):
+            # Add search value to array
             self._conditionVars.append(value)
-        elif isinstance(value, float):
-            addString = f"ISNUMERIC({field}) = 1 AND TRY_CONVERT(dec(38,2), {field}) {inType} ?"
-            self._conditionVars.append(value)
+            qString = "?"
+
+            numCheckStr = checkNumeric(self.env["driver"], field)
+            numConvertStr = convertString(self.env["driver"], field, value)
+            fieldStr = "{} AND {}".format(numCheckStr, numConvertStr)
+            addString = f"{fieldStr} {inType} {qString}"
+
+        # If value is not in a list, not numeric, and not null, search without any data type checks
         else:
-            addString = f"{field} {inType} ?"
+            # Add search value to array
             self._conditionVars.append(value)
+            qString = "?"
+            addString = f"{field} {inType} {qString}"
 
         self.sql = f"{self.sql} AND {addString}"
 
@@ -155,36 +211,15 @@ class SQLServer:
                 SQLServer.add_conditional(key, conditional, data)
 
     def conn_parameters(self):
-        # Get required connection parameters
-        srv = {
-            "server": self.env["server"],
-            "driver": self.env["driver"],
-            "database": self.env["database"],
-            "trusted_connection": self.env["trusted_connection"],
-            "user": self.env["user"],
-            "pass": self.env["pass"],
-        }
+        connectionParams = list()
+        printableParams = list()
+        for key in base_environment.keys():
+            if self.env[key] and self.env[key] != "":
+                connectionParams.append(f"{key}={self.env[key]}")
+                if key not in ("user", "pass"):
+                    printableParams.append((key, self.env[key]))
 
-        # Set up connection paramters
-        params = dict()
-
-        # Generate parameter string for pyodbc
-        params["connection"] = (
-            "Driver="
-            + srv["driver"]
-            + ";Server="
-            + srv["server"]
-            + ";Database="
-            + srv["database"]
-            + ";"
-        )
-        # Setup if we are using a trusted connection (local system credentials)
-        if srv["trusted_connection"] == "yes":
-            params["auth"] = "Trusted_Connection=" + srv["trusted_connection"] + ";"
-        else:
-            params["auth"] = "UID=" + srv["user"] + ";PWD=" + srv["pass"] + ";"
-
-        return params
+        return {"connection": ";".join(connectionParams) + ";", "details": printableParams}
 
     def run_query(self):
         params = self.conn_parameters()
@@ -196,15 +231,17 @@ class SQLServer:
         results = []
 
         try:
-            print("Starting Connection")
-            conn = pyodbc.connect(r"" + params["connection"] + params["auth"])
+            logger.info(f"Query: Creating Connection")
+            logger.debug(params["details"])
+            # logger.debug(params["connection"])
+            conn = pyodbc.connect(r"" + params["connection"])
             conn.timeout = self.settings["timeout"]
             print("Getting Cursor")
             cursor = conn.cursor()
 
+            logger.debug(f"SQL Statement: {self.sql}")
+            logger.debug(f"SQL Variables: {self.vars}")
             if self.debug:
-                logger.debug(f"SQL Statement: {len(self.sql)}")
-                logger.debug(f"SQL Variables: {self.vars}")
                 print("**************** SQL *************** ")
                 print(self.sql)
                 print("**************** Vars *************** ")
@@ -212,12 +249,14 @@ class SQLServer:
                 print("************************************ ")
 
             print("Running Query: Executing script")
+            logger.info(f"Query: Executing SQL Statement")
             if self.vars:
                 cursor.execute(self.sql, self.vars)
             else:
                 cursor.execute(self.sql)
 
             print("Processing the Data: Getting Columns")
+            logger.info(f"Query: Getting Fieldnames")
             logger.debug(f"cursor.description: {cursor.description}")
             if self.debug:
                 print(cursor.description)
@@ -226,6 +265,7 @@ class SQLServer:
                 columns = [column[0] for column in cursor.description]
 
             print("Processing the Data: Looping over returned results")
+            logger.info(f"Query: Getting Row Data")
             for row in cursor.fetchall():
                 if self.debug:
                     print(row)
@@ -246,18 +286,22 @@ class SQLServer:
 
             self.result = results
 
-        except Exception as inst:
-            logger.error(type(inst))
-            logger.error(inst, exc_info=True)
+        except Exception as e:
+            print("Error")
+            logger.error(type(e))
+            logger.error(e, exc_info=True)
             return
 
     def get_fields(self):
         try:
-            iter(self.result)
-            iter(self.result[0])
-            return self.result[0].keys()
-        except TypeError as e:
-            logger.error(f"Results are not iterable: {len(self.results)}")
+            if len(self.result) == 0:
+                return None
+            else:
+                iter(self.result)
+                iter(self.result[0])
+                return self.result[0].keys()
+        except Exception as e:
+            logger.error(f"Results are not iterable: {len(self.result)}")
             logger.error(e, exc_info=True)
             print("not iterable")
 

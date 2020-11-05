@@ -15,24 +15,21 @@ from pathlib import Path
 ###
 
 ### Grab Logging details from environment variables if they exist, if not use defaults
-LOG_LEVEL = logging.getLevelName("DEBUG")
-if os.environ.get("LOG_LEVEL"):
-    LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL").upper())
+def check_environment_vars(envVar, defaultVal):
+    print(defaultVal)
+    if os.environ.get(envVar):
+        return os.environ.get(envVar)
+    return defaultVal
 
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-if os.environ.get("LOG_FORMAT"):
-    LOG_FORMAT = os.environ.get("LOG_FORMAT")
 
-LOG_FOLDER = Path(__file__).resolve().parent / "logs"
-if os.environ.get("LOG_FOLDER"):
-    LOG_FOLDER = os.environ.get("LOG_FOLDER")
-
+LOG_LEVEL = logging.getLevelName(check_environment_vars("LOG_LEVEL", "DEBUG"))
+LOG_FORMAT = logging.Formatter(
+    check_environment_vars("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+LOG_FILE = check_environment_vars("LOG_FILE", "genDB.log")
+LOG_FOLDER = check_environment_vars("LOG_FOLDER", Path(__file__).resolve().parent / "logs")
 if not LOG_FOLDER.is_dir():
     LOG_FOLDER.mkdir(parents=True, exist_ok=True)
-
-LOG_FILE = "genDB.log"
-if os.environ.get("LOG_FILE"):
-    LOG_FILE = os.environ.get("LOG_FILE")
 
 
 def get_console_handler():
