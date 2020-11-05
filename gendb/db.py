@@ -31,14 +31,6 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-def formatField(inDriver, field):
-    # check if database is SQLite
-    if re.search("SQLite", inDriver):
-        return "'{}'".format(field)
-    else:
-        return field
-
-
 def checkNumeric(inDriver, field):
     # check if database is TSQL
     if re.search("SQL Server", inDriver):
@@ -175,7 +167,6 @@ class SQLServer:
             return
 
         addString = ""
-        # field = formatField(self.env["driver"], field)
         # Check if we are search for NULL or excluding NULL values
         if value == None:
             if inType == "=":
