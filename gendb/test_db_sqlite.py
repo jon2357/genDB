@@ -9,6 +9,10 @@ from pathlib import Path
 ## Import modules to test
 from .db import SQLServer
 
+TEST_OUTPUT_DIR = Path(__file__).resolve().parent / "tests" / "test_output"
+if not TEST_OUTPUT_DIR.is_dir():
+    TEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 test_env = {
     "driver": "{Devart ODBC Driver for SQLite}",
     "database": "./gendb/tests/testDB.db",
@@ -175,12 +179,11 @@ def test_sql_query_export_csv():
     inVars = None
     db = SQLServer(env=test_env, sql=sql, inVars=inVars, dbg=False)
     db.run_query()
-    test_output_dir = Path(__file__).resolve().parent / "tests"
 
-    fullFilePath = test_output_dir / "test.csv"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlite_test.csv"
     db.export_csv(fullFilePath)
 
-    fullFilePath = test_output_dir / "test_selected.csv"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlite_test_selected.csv"
     db.export_csv(fullFilePath, ["testVarChar", "testInt"])
 
 
@@ -189,10 +192,9 @@ def test_sql_query_export_json():
     inVars = None
     db = SQLServer(env=test_env, sql=sql, inVars=inVars, dbg=False)
     db.run_query()
-    test_output_dir = Path(__file__).resolve().parent / "tests" / "output"
 
-    fullFilePath = test_output_dir / "test.json"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlite_test.json"
     db.export_json(fullFilePath)
 
-    fullFilePath = test_output_dir / "test_selected.json"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlite_test_selected.json"
     db.export_json(fullFilePath, ["testVarChar", "testInt"])

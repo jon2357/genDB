@@ -178,10 +178,10 @@ def test_sql_query_export_csv():
     db = SQLServer(env=test_env, sql=sql, inVars=inVars, dbg=False)
     db.run_query()
 
-    fullFilePath = TEST_OUTPUT_DIR / "test.csv"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlserver_test.csv"
     db.export_csv(fullFilePath)
 
-    fullFilePath = TEST_OUTPUT_DIR / "test_selected.csv"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlserver_test_selected.csv"
     db.export_csv(fullFilePath, ["testVarChar", "testInt"])
 
 
@@ -191,8 +191,8 @@ def test_sql_query_export_json():
     db = SQLServer(env=test_env, sql=sql, inVars=inVars, dbg=False)
     db.run_query()
 
-    fullFilePath = TEST_OUTPUT_DIR / "test.json"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlserver_test.json"
     db.export_json(fullFilePath)
 
-    fullFilePath = TEST_OUTPUT_DIR / "test_selected.json"
+    fullFilePath = TEST_OUTPUT_DIR / "sqlserver_test_selected.json"
     db.export_json(fullFilePath, ["testVarChar", "testInt"])

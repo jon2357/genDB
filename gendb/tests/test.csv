@@ -1,7 +1,0 @@
-testVarCharNull,testVarChar,testIntNull,testInt,testFloatNull,testFloat
-vc1,vc10,1,10,100.1,100.1
-vc2,vc20,2,20,200.1,200.1
-vc3,vc30,3,30,300.1,300.1
-991,992,4,40,400.1,400.1
-991.1,992.1,5,50,500.1,500.1
-,992,,60,,600.1
