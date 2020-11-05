@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
-requirements = ["pyodbc>=4"]
+requirements = ["pyodbc>=4", "setuptools-git"]
 
 setup(
     name="gendb",
@@ -15,6 +15,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/jon2357/genDB",
     packages=find_packages(),
+    include_package_data=True,
     install_requires=requirements,
     python_requires=">=3.5, <4",
     classifiers=[
