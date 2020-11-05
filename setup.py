@@ -3,11 +3,13 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
-requirements = ["pyodbc>=4", "setuptools-git"]
+requirements = [
+    "pyodbc>=4",
+]
 
 setup(
     name="gendb",
-    version="0.0.3",
+    version="0.0.4",
     author="Jon Strunk",
     author_email="jon@jonstrunk.com",
     description="A package to provide a generic SQL Querying Base Class",
@@ -16,8 +18,11 @@ setup(
     url="https://github.com/jon2357/genDB",
     packages=find_packages(),
     include_package_data=True,
+    setup_requires=[
+        "setuptools_git >= 1",
+    ],
     install_requires=requirements,
-    python_requires=">=3.5, <4",
+    python_requires=">=3.5",
     classifiers=[
         "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
