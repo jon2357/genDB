@@ -2,6 +2,7 @@
 .vscode/
 .tmp/
 logs/
+test_output/
 *.db
 
 # Byte-compiled / optimized / DLL files

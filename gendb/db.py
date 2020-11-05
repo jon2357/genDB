@@ -40,15 +40,16 @@ def checkNumeric(inDriver, field):
     if re.search("SQLite", inDriver):
         # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} GLOB '[1-9]')"
         # "(typeof({}) = 'integer' OR typeof({}) = 'real' OR {} REGEXP '/^\d*\.?\d+$/' )"
-        return "(typeof({}) = 'integer' OR typeof({}) = 'real')".format(field, field, field)
+        # return "(typeof({}) = 'integer' OR typeof({}) = 'real')".format(field, field, field)
+        return None
 
     # check if database is Postgres
     if re.search("PostgreSQL", inDriver):
-        pass
+        return None
 
     # check if database is Oracle
     if re.search("Oracle", inDriver):
-        pass
+        return None
 
 
 def convertString(inDriver, field, value):
@@ -65,10 +66,10 @@ def convertString(inDriver, field, value):
             return "CAST({} AS REAL)".format(field)
 
     if re.search("PostgreSQL", inDriver):
-        pass
+        return field
 
     if re.search("Oracle", inDriver):
-        pass
+        return field
 
 
 class SQLServer:
@@ -189,7 +190,11 @@ class SQLServer:
 
             numCheckStr = checkNumeric(self.env["driver"], field)
             numConvertStr = convertString(self.env["driver"], field, value)
-            fieldStr = "{} AND {}".format(numCheckStr, numConvertStr)
+            if numCheckStr != None:
+                fieldStr = "{} AND {}".format(numCheckStr, numConvertStr)
+            else:
+                fieldStr = "{}".format(numConvertStr)
+
             addString = f"{fieldStr} {inType} {qString}"
 
         # If value is not in a list, not numeric, and not null, search without any data type checks
