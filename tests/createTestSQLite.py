@@ -1,9 +1,11 @@
-# python ./gendb/tests/createTestSQLite.py
+# python ./gendb/test/createTestSQLite.py
 import os
 import sqlite3
 from sqlite3 import Error
 
-db_file = "./gendb/tests/testDB.db"
+from pathlib import Path
+
+db_file = Path(__file__).resolve().parent / "testDB.db"
 
 
 def deleteDB():
