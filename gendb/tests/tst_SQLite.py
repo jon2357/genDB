@@ -1,6 +1,7 @@
 # import sys, os
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # print(sys.path)
+# Must be run from outside the gendb folder, placed in tests/ for organization only
 from gendb.db import SQLServer
 
 # Requires installing a third party SQLite driver: https://www.devart.com/odbc/sqlite/download.html

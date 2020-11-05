@@ -1,5 +1,6 @@
 # "DRIVER={ODBC Driver 17 for SQL Server};Server=localhost\SQLEXPRESS;Database=master;trusted_connection=yes;"
 # SQL Server must be running for test to work
+# Must be run from outside the gendb folder, placed in tests/ for organization only
 from gendb.db import SQLServer
 
 
