@@ -2,7 +2,7 @@
 
 General SQL Database Class for Dynamically Querying with Conditionals.
 
-Wraps the pyodbc library to create a unified interface for adding dynamic conditional database search without knowing the underlying structure and field types during searching.
+Wraps the pyodbc library to create a unified interface for adding dynamic conditional database search without knowing the underlying structure and field types during the search. Uses both value parameterization and SQL sanitization.
 
 ## Additional Software for testing
 

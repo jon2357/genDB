@@ -10,13 +10,13 @@ test_env = {
     "server": "localhost",
     "trusted_connection": "yes",
 }
-sql = "SELECT * FROM testtable WHERE 1 = 1 "
+sql = "SELECT * FROM testTable WHERE 1 = 1 "
 
 
 def main():
 
     db = SQLServer(env=test_env, sql=sql, dbg=True)
-    db.add_conditional("fldIntNull", "!=", 10)
+    db.add_conditional("testInt", "!=", 10)
     db.run_query()
     print(db.get_fields())
 
